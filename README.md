@@ -33,6 +33,10 @@ the standard user configuration directories. It merges the Codex hooks into
 `~/.codex/hooks.json`, preserving existing hooks and creating a timestamped
 backup before changing that file. It does not use `sudo`.
 
+Notification clicks switch to the agent window's monitor and workspace, then
+focus that exact window. Notifications are suppressed when that window's
+workspace is already visible on its monitor.
+
 Restart OpenCode after installation. In Codex, open `/hooks` and review/trust
 the `PermissionRequest` and `Stop` hooks if Codex asks. Codex requires this
 review before local hooks run.

@@ -77,6 +77,7 @@ install_managed_file() {
 }
 
 install_managed_file "$repo_dir/src/agent-attention-notify" "$bin_dir/agent-attention-notify" 755
+install_managed_file "$repo_dir/src/agent-attention-window.py" "$bin_dir/agent-attention-window" 755
 install_managed_file "$repo_dir/src/codex-hook.py" "$codex_adapter" 755
 install_managed_file "$repo_dir/src/opencode/attention-notifications.ts" "$plugin_dir/attention-notifications.ts"
 install_managed_file "$repo_dir/src/icons/codex.png" "$data_dir/icons/codex.png"
