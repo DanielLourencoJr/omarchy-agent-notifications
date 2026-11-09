@@ -169,19 +169,21 @@ time.sleep(120)
         self.assertEqual(result.returncode, 0)
         self.assertEqual(self.notifications(), [])
 
-    def test_codex_on_another_workspace_notifies_and_click_targets_it(self):
+    def test_codex_on_another_workspace_notifies_with_open_action(self):
         result = self.notify(active_workspace=2)
         self.assertEqual(result.returncode, 0)
         notifications = self.notifications()
         self.assertEqual(len(notifications), 1)
         args = notifications[0]
-        self.assertIn("--exec", args)
-        click_index = args.index("--exec") + 1
-        self.assertEqual(args[click_index], str(self.local_bin / "agent-attention-window"))
-        self.assertEqual(args[click_index + 1 :], ["focus", str(os.getpid()), THREAD_ID])
+        self.assertIn("--action", args)
+        action_index = args.index("--action")
+        self.assertEqual(args[action_index + 1], "Open it")
+        command = args[action_index + 2 :]
+        self.assertEqual(command[0], str(self.local_bin / "agent-attention-window"))
+        self.assertEqual(command[1:], ["focus", str(os.getpid()), THREAD_ID])
 
         click_result = subprocess.run(
-            args[click_index:], env=self.env, check=False, timeout=5
+            command, env=self.env, check=False, timeout=5
         )
         self.assertEqual(click_result.returncode, 0)
         dispatches = [

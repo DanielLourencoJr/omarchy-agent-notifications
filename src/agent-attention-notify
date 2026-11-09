@@ -33,7 +33,9 @@ if "$window_helper" visible "$pid" "$thread_id" 2>/dev/null; then
   exit 0
 fi
 
+notification_args=(--app-name "$harness" -u "$urgency")
 if [[ -n $icon && -r $icon ]]; then
-  exec omarchy-notification-send --app-name "$harness" -u "$urgency" --image "$icon" "$title" "$body" --exec "$window_helper" focus "$pid" "$thread_id"
+  notification_args+=(--image "$icon")
 fi
-exec omarchy-notification-send --app-name "$harness" -u "$urgency" "$title" "$body" --exec "$window_helper" focus "$pid" "$thread_id"
+exec omarchy-notification-send "${notification_args[@]}" "$title" "$body" \
+  --action "Open it" "$window_helper" focus "$pid" "$thread_id"

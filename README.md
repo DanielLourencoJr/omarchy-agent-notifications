@@ -33,9 +33,9 @@ the standard user configuration directories. It merges the Codex hooks into
 `~/.codex/hooks.json`, preserving existing hooks and creating a timestamped
 backup before changing that file. It does not use `sudo`.
 
-Notification clicks switch to the agent window's monitor and workspace, then
-focus that exact window. Notifications are suppressed when that window's
-workspace is already visible on its monitor.
+The “Open it” notification action switches to the agent window's monitor and
+workspace, then focuses that exact window. Notifications are suppressed when
+that window's workspace is already visible on its monitor.
 
 Codex hooks can run in its shared app-server rather than under the terminal
 process. The Codex adapter passes the session ID so the helper can resolve the
