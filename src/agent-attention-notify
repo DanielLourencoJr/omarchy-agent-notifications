@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+harness=${1:?harness required}
+event=${2:?event required}
+pid=${3:?agent process PID required}
+[[ $pid =~ ^[0-9]+$ ]] || exit 2
+
+case "$event" in
+  needs_input|approval)
+    urgency=critical
+    title="$harness needs your input"
+    body="An approval or question is waiting for your response."
+    ;;
+  finished)
+    urgency=normal
+    title="$harness finished"
+    body="The session is waiting for your next instruction."
+    ;;
+  *) exit 2 ;;
+esac
+
+data_home=${XDG_DATA_HOME:-"$HOME/.local/share"}
+case "${harness,,}" in
+  codex) icon="$data_home/agent-attention/icons/codex.png" ;;
+  opencode) icon="$data_home/agent-attention/icons/opencode.svg" ;;
+  *) icon= ;;
+esac
+
+# Suppress only when this agent process belongs to a window on a workspace
+# currently visible on that window's monitor.
+clients=$(hyprctl -j clients 2>/dev/null) || clients='[]'
+monitors=$(hyprctl -j monitors 2>/dev/null) || monitors='[]'
+if python3 - "$pid" "$clients" "$monitors" <<'PY'
+import json, sys
+
+pid = int(sys.argv[1])
+try:
+    clients = json.loads(sys.argv[2])
+    monitors = json.loads(sys.argv[3])
+except (json.JSONDecodeError, TypeError):
+    raise SystemExit(1)
+
+active = {m.get("name"): m.get("activeWorkspace", {}).get("id") for m in monitors}
+ancestors = set()
+while pid > 1 and pid not in ancestors:
+    ancestors.add(pid)
+    try:
+        with open(f"/proc/{pid}/stat") as f:
+            pid = int(f.read().rsplit(")", 1)[1].split()[1])
+    except (OSError, ValueError, IndexError):
+        break
+
+for client in clients:
+    if int(client.get("pid") or -1) in ancestors:
+        if active.get(client.get("monitor")) == client.get("workspace", {}).get("id"):
+            raise SystemExit(0)
+raise SystemExit(1)
+PY
+then
+  exit 0
+fi
+
+if [[ -n $icon && -r $icon ]]; then
+  exec omarchy-notification-send --app-name "$harness" -u "$urgency" --image "$icon" "$title" "$body"
+fi
+exec omarchy-notification-send --app-name "$harness" -u "$urgency" "$title" "$body"
