@@ -35,11 +35,17 @@ class CodexVisibilityTest(unittest.TestCase):
         self.clients_json = self.temp_root / "clients.json"
         self.monitors_json = self.temp_root / "monitors.json"
         self.pid_file = self.temp_root / "fake-codex.pid"
+        self.dispatch_log = self.temp_root / "dispatches.jsonl"
 
         self.write_executable(
             self.fake_bin / "hyprctl",
             """#!/usr/bin/env python3
 import os, sys
+if sys.argv[1] == "dispatch":
+    import json
+    with open(os.environ["TEST_DISPATCH_LOG"], "a", encoding="utf-8") as out:
+        out.write(json.dumps(sys.argv[1:]) + "\\n")
+    raise SystemExit(0)
 path = os.environ["TEST_CLIENTS_JSON"] if sys.argv[-1] == "clients" else os.environ["TEST_MONITORS_JSON"]
 sys.stdout.write(open(path, encoding="utf-8").read())
 """,
@@ -62,6 +68,7 @@ with open(os.environ["TEST_NOTIFICATION_LOG"], "a", encoding="utf-8") as out:
                 "TEST_CLIENTS_JSON": str(self.clients_json),
                 "TEST_MONITORS_JSON": str(self.monitors_json),
                 "TEST_NOTIFICATION_LOG": str(self.notification_log),
+                "TEST_DISPATCH_LOG": str(self.dispatch_log),
                 "FAKE_CODEX_PID_FILE": str(self.pid_file),
             }
         )
@@ -172,6 +179,25 @@ time.sleep(120)
         click_index = args.index("--exec") + 1
         self.assertEqual(args[click_index], str(self.local_bin / "agent-attention-window"))
         self.assertEqual(args[click_index + 1 :], ["focus", str(os.getpid()), THREAD_ID])
+
+        click_result = subprocess.run(
+            args[click_index:], env=self.env, check=False, timeout=5
+        )
+        self.assertEqual(click_result.returncode, 0)
+        dispatches = [
+            json.loads(line) for line in self.dispatch_log.read_text().splitlines()
+        ]
+        self.assertEqual(
+            dispatches,
+            [
+                ['dispatch', 'hl.dsp.focus({ monitor = "TEST-MONITOR"})'],
+                ['dispatch', 'hl.dsp.focus({ workspace = "7" })'],
+                [
+                    'dispatch',
+                    'hl.dsp.focus({ window = hl.get_window("address:0x1234") })',
+                ],
+            ],
+        )
 
 
 if __name__ == "__main__":

@@ -90,14 +90,22 @@ def focus(client):
     if not monitor or workspace_id is None or not address:
         return False
 
-    dispatch("focusmonitor", monitor.get("name", str(monitor_id)))
-    dispatch("workspace", str(workspace_id))
-    dispatch("focuswindow", f"address:{address}")
+    dispatch(f"hl.dsp.focus({{ monitor = {lua_string(monitor.get('name', str(monitor_id))) }}})")
+    dispatch(f"hl.dsp.focus({{ workspace = {lua_string(str(workspace_id))} }})")
+    dispatch(
+        "hl.dsp.focus({ window = hl.get_window("
+        f"{lua_string(f'address:{address}')}) }})"
+    )
     return True
 
 
-def dispatch(name, argument):
-    subprocess.run(["hyprctl", "dispatch", name, argument], check=True)
+def lua_string(value):
+    """Encode a string as a Lua literal for Hyprland's Lua-based dispatcher."""
+    return json.dumps(str(value), ensure_ascii=True)
+
+
+def dispatch(expression):
+    subprocess.run(["hyprctl", "dispatch", expression], check=True)
 
 
 def main():
