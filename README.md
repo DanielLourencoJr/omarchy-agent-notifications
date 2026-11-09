@@ -37,6 +37,10 @@ Notification clicks switch to the agent window's monitor and workspace, then
 focus that exact window. Notifications are suppressed when that window's
 workspace is already visible on its monitor.
 
+Codex hooks can run in its shared app-server rather than under the terminal
+process. The Codex adapter passes the session ID so the helper can resolve the
+matching `codex resume <session-id>` window in that case.
+
 Restart OpenCode after installation. In Codex, open `/hooks` and review/trust
 the `PermissionRequest` and `Stop` hooks if Codex asks. Codex requires this
 review before local hooks run.

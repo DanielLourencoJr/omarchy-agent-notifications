@@ -5,6 +5,7 @@ harness=${1:?harness required}
 event=${2:?event required}
 pid=${3:?agent process PID required}
 [[ $pid =~ ^[0-9]+$ ]] || exit 2
+thread_id=${4-}
 data_home=${XDG_DATA_HOME:-"$HOME/.local/share"}
 window_helper="$HOME/.local/bin/agent-attention-window"
 
@@ -28,11 +29,11 @@ case "${harness,,}" in
   *) icon= ;;
 esac
 
-if "$window_helper" visible "$pid" 2>/dev/null; then
+if "$window_helper" visible "$pid" "$thread_id" 2>/dev/null; then
   exit 0
 fi
 
 if [[ -n $icon && -r $icon ]]; then
-  exec omarchy-notification-send --app-name "$harness" -u "$urgency" --image "$icon" "$title" "$body" --exec "$window_helper" focus "$pid"
+  exec omarchy-notification-send --app-name "$harness" -u "$urgency" --image "$icon" "$title" "$body" --exec "$window_helper" focus "$pid" "$thread_id"
 fi
-exec omarchy-notification-send --app-name "$harness" -u "$urgency" "$title" "$body" --exec "$window_helper" focus "$pid"
+exec omarchy-notification-send --app-name "$harness" -u "$urgency" "$title" "$body" --exec "$window_helper" focus "$pid" "$thread_id"

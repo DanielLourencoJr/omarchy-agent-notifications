@@ -2,6 +2,7 @@
 """Resolve an agent process to its Hyprland window for visibility and focus."""
 
 import json
+import os
 import subprocess
 import sys
 
@@ -25,8 +26,36 @@ def ancestors(pid):
     return found
 
 
-def target_window(pid):
-    process_ancestors = ancestors(pid)
+def processes_for_thread(thread_id):
+    if not thread_id:
+        return []
+    matches = []
+    try:
+        entries = os.scandir("/proc")
+    except OSError:
+        return matches
+    with entries:
+        for entry in entries:
+            if not entry.name.isdigit():
+                continue
+            try:
+                with open(f"{entry.path}/cmdline", "rb") as stream:
+                    argv = [part.decode(errors="replace") for part in stream.read().split(b"\0") if part]
+            except OSError:
+                continue
+            if thread_id in argv and argv and os.path.basename(argv[0]) == "codex":
+                matches.append(int(entry.name))
+    return matches
+
+
+def target_window(pid, thread_id=None):
+    process_ids = [pid] + processes_for_thread(thread_id)
+    process_ancestors = {}
+    for process_id in process_ids:
+        for ancestor_pid, distance in ancestors(process_id).items():
+            process_ancestors[ancestor_pid] = min(
+                distance, process_ancestors.get(ancestor_pid, distance)
+            )
     clients = hypr_json("clients")
     matches = [
         client
@@ -72,11 +101,12 @@ def dispatch(name, argument):
 
 
 def main():
-    if len(sys.argv) != 3 or sys.argv[1] not in {"visible", "focus"}:
+    if len(sys.argv) not in (3, 4) or sys.argv[1] not in {"visible", "focus"}:
         return 2
     try:
         pid = int(sys.argv[2])
-        client = target_window(pid)
+        thread_id = sys.argv[3] if len(sys.argv) == 4 else None
+        client = target_window(pid, thread_id)
         if sys.argv[1] == "visible":
             return 0 if is_visible(client) else 1
         return 0 if focus(client) else 1
