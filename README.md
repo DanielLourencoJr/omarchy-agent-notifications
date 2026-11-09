@@ -61,6 +61,12 @@ If OpenCode or Codex is already open, the installer warns and continues without
 closing either app. Restart the running harnesses afterward so they load updated
 plugins and hook configuration.
 
+## Run the regression tests
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
 ## Uninstall
 
 Remove the installed files:
